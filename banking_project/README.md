@@ -1,4 +1,4 @@
-# Titan Bank - Your Fun Banking Adventure 🚀
+#                               Titan Bank 🏦 
 
 Welcome to **Titan Bank**! 🎉 This isn't just any banking system – it’s an *adventure*! Whether you're depositing money, making transfers, or checking your balance, Titan Bank brings the fun into finance! 💸✨ Let's dive in!
 
