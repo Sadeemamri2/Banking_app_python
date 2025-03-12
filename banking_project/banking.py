@@ -109,12 +109,12 @@ class Account:
 
     def transfer_to_other_customer(self, amount, recipient, from_checking_to_savings, from_checking_to_checking):
         
-        if from_checking_to_savings:
+        if from_checking_to_checking:
             if self.customer.balance_checking >= amount:
                 self.customer.balance_checking -= amount
                 recipient.balance_checking += amount  
                 return True
-        elif from_checking_to_checking: 
+        elif from_checking_to_savings: 
             if self.customer.balance_savings >= amount:
                 self.customer.balance_savings -= amount
                 recipient.balance_checking += amount  
@@ -150,17 +150,18 @@ class Transaction:
                 print("❌ Insufficient funds!")
         elif action == 'transfer':
             if to_account:  
-                if self.account.transfer_to_other_customer(amount, to_account, from_checking_to_savings):
-                   
-                    print(f"✅ ${amount} transferred from {self.account.first_name} {self.account.last_name}'s account to {to_account.first_name} {to_account.last_name}'s account.")
+                if self.account.transfer_to_other_customer(amount, to_account, from_checking_to_savings, from_checking_to_checking):
+
+                    from_account_type = "checking" if from_checking_to_checking else "savings" if from_checking_to_savings else "unknown"
+                    print(f"✅ ${amount} transferred from {self.account.first_name} {self.account.last_name}'s {from_account_type} account to {to_account.first_name} {to_account.last_name}'s account.")
                 else:
                     print("❌ Transfer failed! Insufficient funds.")
             else:  
                 if self.account.transfer(amount, from_checking_to_savings):
                     if from_checking_to_savings:
-                        print(f"✅ ${amount} transferred from {self.account.first_name} {self.account.last_name}'s checking account to savings.")
+                        print(f"✅ ${amount} transferred from {self.account.first_name}'s checking account to savings.")
                     else:
-                        print(f"✅ ${amount} transferred from {self.account.first_name} {self.account.last_name}'s savings account to checking.")
+                        print(f"✅ ${amount} transferred from {self.account.first_name}'s savings account to checking.")
                 else:
                     print("❌ Transfer failed! Insufficient funds.")
 
@@ -265,16 +266,26 @@ def main():
                 elif action == '3':
                     amount = float(input("Enter amount to deposit: "))
                     transaction.execute('deposit', amount)
+                    for i, customer in enumerate(customers):
+                        if customer[0] == logged_in_customer.account_id:
+                            customers[i][4] = logged_in_customer.balance_checking
+                            customers[i][5] = logged_in_customer.balance_savings
+                    bank_data.save_data(customers)
 
                 elif action == '4':
                     amount = float(input("Enter amount to withdraw: "))
                     transaction.execute('withdraw', amount)
+                    for i, customer in enumerate(customers):
+                        if customer[0] == logged_in_customer.account_id:
+                            customers[i][4] = logged_in_customer.balance_checking
+                            customers[i][5] = logged_in_customer.balance_savings
+                    bank_data.save_data(customers)
 
 # This code handles money transfers, allowing the user to choose between transferring between their own accounts 
 # (Checking to Savings or vice versa) or transferring money to another customer, including selecting the transfer direction and recipient.
-            
+        
                 elif action == '5':
-                   recipient = None
+                    success = False 
                     print("Select transfer option:")
                     print("1. Transfer between your own accounts")
                     print("2. Transfer money to another customer")
@@ -291,19 +302,26 @@ def main():
 
                         if transfer_direction == '1':
                             
-                            account.transfer(amount, from_checking_to_savings=True)
-                            print(f"✅ ${amount} transferred from Checking to Savings.")
+                            if account.transfer(amount, from_checking_to_savings=True):
+                                print(f"✅ ${amount} transferred from Checking to Savings.")
+                                success = True
+                            else:
+                                print("❌ Insufficient funds! Transfer failed.")
                         elif transfer_direction == '2':
                             
-                            account.transfer(amount, from_checking_to_savings=False)
-                            print(f"✅ ${amount} transferred from Savings to Checking.")
+                            if account.transfer(amount, from_checking_to_savings=False):
+                                print(f"✅ ${amount} transferred from Savings to Checking.")
+                                success = True
+                            else:
+                                print("❌ Insufficient funds! Transfer failed.")
+
                         else:
                             print("❌ Invalid choice! Please select either 1 or 2.")
                     
                     elif transfer_option == '2':
                         
                         recipient_account_id = input("Enter recipient's account ID: ")
-                        recipient = None
+                        
                         for customer in customers:
                             if customer[0] == recipient_account_id:  
                                 recipient = Customer(*customer)
@@ -318,29 +336,35 @@ def main():
 
                             amount = float(input("Enter amount to transfer: "))
                             if transfer_direction == '1':
-                                account.transfer_to_other_customer(amount, recipient, from_checking_to_savings=False, from_checking_to_checking=True)
+                                if account.transfer_to_other_customer(amount, recipient, from_checking_to_savings=False, from_checking_to_checking=True):
+                                    print(f"✅ ${amount} transferred from Checking to {recipient.first_name} {recipient.last_name}'s Checking.")
+                                    success = True
+                                else:
+                                    print("❌ Insufficient funds! Transfer failed.")
                             elif transfer_direction == '2':
-                                account.transfer_to_other_customer(amount, recipient, from_checking_to_savings=True, from_checking_to_checking=False)  
+                                if account.transfer_to_other_customer(amount, recipient, from_checking_to_savings=True, from_checking_to_checking=False):
+                                    print(f"✅ ${amount} transferred from Savings to {recipient.first_name} {recipient.last_name}'s Checking.")
+                                    success = True
+                                else:
+                                    print("❌ Insufficient funds! Transfer failed.")  
                         else:
                             print("❌ Recipient not found.")
 
 # This code handles overdraft management for the logged-in 
 # customer, updates the customer data with the latest balance and account status, and saves the updated data to the bank's storage (CSV or database).
 
-                account.handle_overdraft()  
-
-                for i, customer in enumerate(customers):
-                    if customer[0] == recipient.account_id:
-                        customers[i][4] = recipient.balance_checking
-                        customers[i][5] = recipient.balance_savings
-                        customers[i][6] = recipient.overdraft_count
-                        customers[i][7] = recipient.account_active
-                    if recipient is not None and customer[0] == recipient.account_id:
-                        customers[i][4] = logged_in_customer.balance_checking
-                        customers[i][5] = logged_in_customer.balance_savings
-                        customers[i][6] = logged_in_customer.overdraft_count
-                        customers[i][7] = logged_in_customer.account_active
-                bank_data.save_data(customers)
+                    account.handle_overdraft()  
+                    if success:
+                        for i, customer in enumerate(customers):
+                            if customer[0] == logged_in_customer.account_id:
+                                customers[i][4] = logged_in_customer.balance_checking
+                                customers[i][5] = logged_in_customer.balance_savings
+                                
+                            if recipient and customer[0] == recipient.account_id:
+                                customers[i][4] = recipient.balance_checking
+                                customers[i][5] = recipient.balance_savings
+                                
+                        bank_data.save_data(customers)
 
 # This code allows the user to reactivate a deactivated account, checks if the account is active or not, 
 # updates the account status, and saves the updated customer data to the storage.
