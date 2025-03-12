@@ -41,7 +41,7 @@ Who said we’re stopping here? The journey’s just beginning! Here are some *c
 
 ## Challenges & Key Takeaways 🚧
 
-Oh boy, where do I start? The road to **Titan Bank** was not smooth, but that's what made the adventure so thrilling! 😅
+The road to **Titan Bank** was not smooth, but that's what made the adventure so thrilling! 😅
 
 - **Transfers Between Accounts**: The real rollercoaster ride! At first, there was a bit of chaos with transferring money between accounts, and this part took the longest to get right. But after some tweaking, it was all smooth sailing! 🚢
   
