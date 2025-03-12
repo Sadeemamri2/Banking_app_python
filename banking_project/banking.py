@@ -1,5 +1,5 @@
 import csv
-
+from datetime import datetime
 ##########################################  CLASS BANK_DATA  ###############################################
 
 # The Bank_data class is responsible for loading and saving customer data from/to a CSV file.
@@ -138,26 +138,45 @@ class Account:
 class Transaction:
     def __init__(self, account):
         self.account = account
+    
+    def log_transaction(self, action, amount):
+        """تسجيل العملية في ملف transactionLog.csv"""
+        with open("transactionLog.csv", mode="a", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                datetime.now().strftime("%Y-%m-%d"),  # التاريخ
+                datetime.now().strftime("%H:%M:%S"),  # الوقت
+                self.account.customer.account_id,     # رقم الحساب
+                action,                               # نوع العملية
+                amount,                               # المبلغ
+                self.account.customer.balance_checking  # الرصيد بعد العملية
+            ])
 
     def execute(self, action, amount, to_account=None, from_checking_to_savings=False):
         if action == 'deposit':
             self.account.deposit(amount)
+            self.log_transaction(action, amount)
             print(f"✅ Deposited ${amount} into checking account.")
+        
         elif action == 'withdraw':
             if self.account.withdraw(amount):
+                self.log_transaction(action, amount)
                 print(f"✅ Withdrew ${amount} from checking account.")
             else:
                 print("❌ Insufficient funds!")
+        
         elif action == 'transfer':
             if to_account:  
                 if self.account.transfer_to_other_customer(amount, to_account, from_checking_to_savings, from_checking_to_checking):
 
                     from_account_type = "checking" if from_checking_to_checking else "savings" if from_checking_to_savings else "unknown"
+                    self.log_transaction("transfer", amount)
                     print(f"✅ ${amount} transferred from {self.account.first_name} {self.account.last_name}'s {from_account_type} account to {to_account.first_name} {to_account.last_name}'s account.")
                 else:
                     print("❌ Transfer failed! Insufficient funds.")
             else:  
                 if self.account.transfer(amount, from_checking_to_savings):
+                    self.log_transaction("transfer", amount)
                     if from_checking_to_savings:
                         print(f"✅ ${amount} transferred from {self.account.first_name}'s checking account to savings.")
                     else:
