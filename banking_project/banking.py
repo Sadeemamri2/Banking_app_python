@@ -2,8 +2,6 @@ import csv
 from datetime import datetime
 ##########################################  CLASS BANK_DATA  ###############################################
 
-# The Bank_data class is responsible for loading and saving customer data from/to a CSV file.
-
 class Bank_data:
     def __init__(self, filename):
         self.filename = filename
@@ -23,10 +21,6 @@ class Bank_data:
             csv_writer.writerows(customers)
 
 ##########################################  CLASS CUSTOMER  ###############################################
-
-# The Customer class represents a bank account with attributes like account_id, balances, and password.
-# It provides methods to check passwords, apply overdraft fees, and manage account activation and deactivation.
-# The overdraft limit is set to -$100, and accounts can be reactivated with a cleared balance and reset overdraft count.
 
 class Customer:
     def __init__(self, account_id, first_name, last_name, password, balance_checking, balance_savings, overdraft_count=0, account_active=True):
@@ -62,11 +56,6 @@ class Customer:
         print(f"✅ Account {self.account_id} reactivated and balance cleared.")
 
 ##########################################  CLASS BANK_ACCOUNT  ###############################################
-
-# The Account class manages a customer's account operations such as deposit, withdrawal, transfer, and overdraft handling.
-# It allows deposits, withdrawals with overdraft fees, and transfers between checking and savings accounts, or to other customers.
-# The class also tracks overdraft occurrences and deactivates the account after two overdrafts.
-
 
 class Account:
     def __init__(self, customer):
@@ -130,29 +119,25 @@ class Account:
 
 ##########################################  CLASS TRANSACTION  ###############################################
 
-# The Transaction class handles various account actions such as deposits, withdrawals, and transfers.
-# It supports depositing money into checking, withdrawing from checking, and transferring between checking and savings or to other customers.
-# It also prints the result of each action, including success or failure messages based on available funds.
-
-
 class Transaction:
     def __init__(self, account):
         self.account = account
     
     def log_transaction(self, action, amount):
-        """تسجيل العملية في ملف transactionLog.csv"""
+        print("log transaction is running")
+        print(action, amount)
         with open("transactionLog.csv", mode="a", newline="") as file:
             writer = csv.writer(file)
             writer.writerow([
-                datetime.now().strftime("%Y-%m-%d"),  # التاريخ
-                datetime.now().strftime("%H:%M:%S"),  # الوقت
-                self.account.customer.account_id,     # رقم الحساب
-                action,                               # نوع العملية
-                amount,                               # المبلغ
-                self.account.customer.balance_checking  # الرصيد بعد العملية
+                datetime.now().strftime("%Y-%m-%d"),  
+                datetime.now().strftime("%H:%M:%S"),  
+                self.account.customer.account_id,     
+                action,                               
+                amount,                               
+                self.account.customer.balance_checking  
             ])
 
-    def execute(self, action, amount, to_account=None, from_checking_to_savings=False):
+    def execute(self, action, amount, to_account=None, from_checking_to_savings=False, from_checking_to_checking=False):
         if action == 'deposit':
             self.account.deposit(amount)
             self.log_transaction(action, amount)
@@ -169,31 +154,27 @@ class Transaction:
             if to_account:  
                 if self.account.transfer_to_other_customer(amount, to_account, from_checking_to_savings, from_checking_to_checking):
 
-                    from_account_type = "checking" if from_checking_to_checking else "savings" if from_checking_to_savings else "unknown"
-                    self.log_transaction("transfer", amount)
-                    print(f"✅ ${amount} transferred from {self.account.first_name} {self.account.last_name}'s {from_account_type} account to {to_account.first_name} {to_account.last_name}'s account.")
+                    from_account_type = "checking" if from_checking_to_checking else "savings" if from_savings_to_checking else "unknown"
+                    self.log_transaction('transfer', amount)
+                    print(f"✅ ${amount} transferred from {self.account.customer.first_name} {self.account.customer.last_name}'s {from_account_type} account to {to_account.first_name} {to_account.last_name}'s account.")
                 else:
-                    print("❌ Transfer failed! Insufficient funds.")
+                    print("❌ Transfer failed! Insufficient funds. 1")
             else:  
                 if self.account.transfer(amount, from_checking_to_savings):
-                    self.log_transaction("transfer", amount)
+                    self.log_transaction('transfer', amount)
                     if from_checking_to_savings:
-                        print(f"✅ ${amount} transferred from {self.account.first_name}'s checking account to savings.")
+                        print(f"✅ ${amount} transferred from {self.account.customer.first_name} checking account to savings.")
                     else:
-                        print(f"✅ ${amount} transferred from {self.account.first_name}'s savings account to checking.")
+                        print(f"✅ ${amount} transferred from {self.account.customer.first_name} savings account to checking.")
                 else:
-                    print("❌ Transfer failed! Insufficient funds.")
+                    print("❌ Transfer failed! Insufficient funds. 2")
 
 
 ##################################### MAIN FUNCTION <is the core engine of the program >
 def main():
     bank_data = Bank_data('bank1.csv')
     customers = bank_data.load_data()
-# to make sure the coustmer object contan the loaded data 
-    # print(customers)
-
-# This loop presents a menu to the user for various banking operations, allowing them to choose an action.
-
+    recipient = None
     logged_in_customer = None
 
     while True:
@@ -208,10 +189,6 @@ def main():
         print("7. Exit")
 
         action = input("Enter the number of the operation: ")
-
-
-# This code handles adding a new customer account, including account type selection and balance input, 
-# and saves the new customer data after validation.
 
         if action == '1':
             try:
@@ -248,10 +225,6 @@ def main():
             except ValueError:
                 print("❌ Invalid input. Please enter a valid number for balance.")
 
-
-# This code handles user login by verifying account ID and password, 
-# ensures the account is active, and creates instances for account and transaction if login is successful.
-
         elif action in ['2', '3', '4', '5', '6']:
             if not logged_in_customer:
                 account_id = input("Enter account ID: ")
@@ -274,13 +247,9 @@ def main():
                 account = Account(logged_in_customer)
                 transaction = Transaction(account)
 
-# This code displays the current balance of the logged-in customer's checking and savings accounts.
                 if action == '2':
                     print(f"📄 Checking Account Balance: ${logged_in_customer.balance_checking}")
                     print(f"📄 Savings Account Balance: ${logged_in_customer.balance_savings}")
-
-# This code handles deposit and withdrawal actions by taking the amount as input 
-# and executing the respective deposit or withdraw operation through the transaction object.
 
                 elif action == '3':
                     amount = float(input("Enter amount to deposit: "))
@@ -300,9 +269,6 @@ def main():
                             customers[i][5] = logged_in_customer.balance_savings
                     bank_data.save_data(customers)
 
-# This code handles money transfers, allowing the user to choose between transferring between their own accounts 
-# (Checking to Savings or vice versa) or transferring money to another customer, including selecting the transfer direction and recipient.
-        
                 elif action == '5':
                     success = False 
                     print("Select transfer option:")
@@ -318,10 +284,11 @@ def main():
                         transfer_direction = input("Enter your choice (1/2): ")
 
                         amount = float(input("Enter amount to transfer: "))
-
+                        
                         if transfer_direction == '1':
                             
                             if account.transfer(amount, from_checking_to_savings=True):
+                                transaction.execute('transfer', amount)
                                 print(f"✅ ${amount} transferred from Checking to Savings.")
                                 success = True
                             else:
@@ -329,6 +296,7 @@ def main():
                         elif transfer_direction == '2':
                             
                             if account.transfer(amount, from_checking_to_savings=False):
+                                transaction.execute('transfer', amount)
                                 print(f"✅ ${amount} transferred from Savings to Checking.")
                                 success = True
                             else:
@@ -354,23 +322,26 @@ def main():
                             transfer_direction = input("Enter your choice (1/2): ")
 
                             amount = float(input("Enter amount to transfer: "))
+                            
                             if transfer_direction == '1':
                                 if account.transfer_to_other_customer(amount, recipient, from_checking_to_savings=False, from_checking_to_checking=True):
+                                    #it looks like you need to do Transaction.execute here, or something like that
+                                    
                                     print(f"✅ ${amount} transferred from Checking to {recipient.first_name} {recipient.last_name}'s Checking.")
+                                    transaction.execute('transfer', amount, recipient)
                                     success = True
                                 else:
                                     print("❌ Insufficient funds! Transfer failed.")
                             elif transfer_direction == '2':
                                 if account.transfer_to_other_customer(amount, recipient, from_checking_to_savings=True, from_checking_to_checking=False):
+                                   
                                     print(f"✅ ${amount} transferred from Savings to {recipient.first_name} {recipient.last_name}'s Checking.")
+                                    transaction.execute('transfer', amount)
                                     success = True
                                 else:
                                     print("❌ Insufficient funds! Transfer failed.")  
                         else:
                             print("❌ Recipient not found.")
-
-# This code handles overdraft management for the logged-in 
-# customer, updates the customer data with the latest balance and account status, and saves the updated data to the bank's storage (CSV or database).
 
                     account.handle_overdraft()  
                     if success:
@@ -384,9 +355,6 @@ def main():
                                 customers[i][5] = recipient.balance_savings
                                 
                         bank_data.save_data(customers)
-
-# This code allows the user to reactivate a deactivated account, checks if the account is active or not, 
-# updates the account status, and saves the updated customer data to the storage.
 
                 if action == '6':  
                             account_id = input("Enter your account ID: ")
@@ -413,13 +381,12 @@ def main():
                                     break
                             else:
                                 print("❌ Account not found.")
-#  this code to exit from the program or logout 
+
         elif action == '7':
             print("🚪 Goodbay....Thank you for using Titan Bank! Have a great day🤩.")
             break
         else:
             print("❌ Invalid option. Please try again.")
-# This line checks if the script is being run directly (not imported as a module) 
-# calls the main function to execute the program's logic
+
 if __name__ == "__main__":
     main()
